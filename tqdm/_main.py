@@ -1,4 +1,4 @@
-from ._tqdm import tqdm
+from .core import tqdm
 from ._version import __version__  # NOQA
 import sys
 import re
