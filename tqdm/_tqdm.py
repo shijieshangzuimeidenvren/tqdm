@@ -15,7 +15,9 @@ from __future__ import division
 from ._utils import _supports_unicode, _environ_cols_wrapper, _range, _unich, \
     _term_move_up, _unicode, WeakSet
 import sys
-from time import time
+from threading import Thread
+from threading import Event
+from time import time, sleep
 
 
 __author__ = {"github.com/": ["noamraph", "obiwanus", "kmike", "hadim",
@@ -41,12 +43,50 @@ class TqdmDeprecationWarning(Exception):
             super(TqdmDeprecationWarning, self).__init__(msg, *a, **k)
 
 
+class TMonitor(Thread):
+
+    def __init__ (self, tqdm_cls, sleep_interval):
+        Thread.__init__(self)
+        self.exit_event=Event()
+        self.tqdm_cls = tqdm_cls
+        self.sleep_interval=sleep_interval
+        self.start()
+
+    def exit(self):
+        self.exit_event.set()
+        self.join()
+        return self.report()
+
+    def run(self):
+        while not self.exit_event.isSet():
+            # Sleep some time...
+            sleep(self.sleep_interval)
+            # Then monitor!
+            cur_t = time()
+            # Check for each tqdm instance if one is waiting too long to print
+            for instance in self.tqdm_cls._instances:
+                # Only if mininterval > 1 (else it's just that iterations are slow)
+                # and if the last refresh was longer than maxinterval for this instance
+                if instance.mininterval > 1 and \
+                  (cur_t - instance.last_print_t) > instance.maxinterval:
+                    # We force refresh on next iteration!
+                    # dynamic_miniters should adjust mininterval automatically
+                    instance.mininterval = 1
+
+    def report(self):
+        return self.is_alive()
+
+
 class tqdm(object):
     """
     Decorate an iterable object, returning an iterator which acts exactly
     like the original iterable, but prints a dynamically updating
     progressbar every time a value is requested.
     """
+
+    monitor_interval = 10
+    monitor = None
+
     @staticmethod
     def format_sizeof(num, suffix=''):
         """
@@ -290,6 +330,9 @@ class tqdm(object):
         if "_instances" not in cls.__dict__:
             cls._instances = WeakSet()
         cls._instances.add(instance)
+        # Create the monitoring thread
+        if cls.monitor_interval and (cls.monitor is None or not cls.monitor.report()):
+            cls.monitor = TMonitor(cls, cls.monitor_interval)
         # Return the instance
         return instance
 
@@ -315,6 +358,9 @@ class tqdm(object):
             for inst in cls._instances:
                 if inst.pos > instance.pos:
                     inst.pos -= 1
+            # Kill monitor if no instances left
+            if not cls._instances:
+                cls.monitor.exit()
         except KeyError:
             pass
 
