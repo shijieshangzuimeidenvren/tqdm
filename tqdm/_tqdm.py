@@ -44,6 +44,9 @@ class TqdmDeprecationWarning(Exception):
 
 
 class TMonitor(Thread):
+    """ tqdm monitoring thread
+    Monitors if tqdm bars are taking too much time to display
+    and readjusts miniters automatically if necessary"""
 
     def __init__ (self, tqdm_cls, sleep_interval):
         Thread.__init__(self)
@@ -67,11 +70,11 @@ class TMonitor(Thread):
             for instance in self.tqdm_cls._instances:
                 # Only if mininterval > 1 (else it's just that iterations are slow)
                 # and if the last refresh was longer than maxinterval for this instance
-                if instance.mininterval > 1 and \
+                if instance.miniters > 1 and \
                   (cur_t - instance.last_print_t) > instance.maxinterval:
                     # We force refresh on next iteration!
                     # dynamic_miniters should adjust mininterval automatically
-                    instance.mininterval = 1
+                    instance.miniters = 1
 
     def report(self):
         return self.is_alive()
@@ -733,7 +736,6 @@ class tqdm(object):
             ncols = self.ncols
             mininterval = self.mininterval
             maxinterval = self.maxinterval
-            miniters = self.miniters
             dynamic_miniters = self.dynamic_miniters
             unit = self.unit
             unit_scale = self.unit_scale
@@ -762,6 +764,7 @@ Please use `tqdm_gui(...)` instead of `tqdm(..., gui=True)`
                 # Note: does not call self.update(1) for speed optimisation.
                 n += 1
                 # check the counter first (avoid calls to time())
+                miniters = self.miniters  # need to watch for monitoring thread changes
                 if n - last_print_n >= miniters:
                     delta_t = _time() - last_print_t
                     if delta_t >= mininterval:
@@ -807,6 +810,7 @@ Please use `tqdm_gui(...)` instead of `tqdm(..., gui=True)`
                         # Store old values for next call
                         self.n = self.last_print_n = last_print_n = n
                         self.last_print_t = last_print_t = cur_t
+                        self.miniters = miniters
 
             # Closing the progress bar.
             # Update some internal variables for close().
