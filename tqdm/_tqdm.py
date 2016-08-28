@@ -60,7 +60,7 @@ class TMonitor(Thread):
 
     def exit(self):
         self.exit_event.set()
-        self.join()
+        #self.join()  # DO NOT, blocking event, slows down tqdm at closing
         return self.report()
 
     def run(self):
