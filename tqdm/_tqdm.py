@@ -51,6 +51,7 @@ class TMonitor(Thread):
     def __init__ (self, tqdm_cls, sleep_interval):
         Thread.__init__(self)
         self.exit_event=Event()
+        self.daemon = True  # kill this thread when main is killed (KeyboardInterrupt)
         self.tqdm_cls = tqdm_cls
         self.sleep_interval=sleep_interval
         self.start()
@@ -72,9 +73,11 @@ class TMonitor(Thread):
                 # and if the last refresh was longer than maxinterval for this instance
                 if instance.miniters > 1 and \
                   (cur_t - instance.last_print_t) > instance.maxinterval:
-                    # We force refresh on next iteration!
+                    # We force bypassing miniters on next iteration
                     # dynamic_miniters should adjust mininterval automatically
                     instance.miniters = 1
+                    # Refresh now!
+                    instance.refresh()
 
     def report(self):
         return self.is_alive()
@@ -770,7 +773,7 @@ Please use `tqdm_gui(...)` instead of `tqdm(..., gui=True)`
                     if delta_t >= mininterval:
                         cur_t = _time()
                         delta_it = n - last_print_n
-                        elapsed = cur_t - start_t
+                        elapsed = cur_t - start_t  # perf optimization if in inner loop
                         # EMA (not just overall average)
                         if smoothing and delta_t:
                             avg_time = delta_t / delta_it \
