@@ -54,6 +54,8 @@ class TMonitor(Thread):
         self.daemon = True  # kill this thread when main is killed (KeyboardInterrupt)
         self.tqdm_cls = tqdm_cls
         self.sleep_interval=sleep_interval
+        self._time = time
+        self._sleep = sleep
         self.start()
 
     def exit(self):
@@ -64,9 +66,9 @@ class TMonitor(Thread):
     def run(self):
         while not self.exit_event.isSet():
             # Sleep some time...
-            sleep(self.sleep_interval)
+            self._sleep(self.sleep_interval)
             # Then monitor!
-            cur_t = time()
+            cur_t = self._time()
             # Check for each tqdm instance if one is waiting too long to print
             for instance in self.tqdm_cls._instances:
                 # Only if mininterval > 1 (else it's just that iterations are slow)
