@@ -9,6 +9,7 @@ import re
 import os
 from nose import with_setup
 from nose.plugins.skip import SkipTest
+from nose.tools import assert_raises
 
 from tqdm import tqdm
 from tqdm import trange
@@ -1233,3 +1234,15 @@ def test_len():
     with closing(StringIO()) as f:
         with tqdm(np.zeros((3, 4)), file=f) as t:
             assert len(t) == 3
+
+
+@with_setup(pretest, posttest)
+def test_deprecation_exception():
+    def test_TqdmDeprecationWarning():
+        with closing(StringIO()) as our_file:
+            raise (TqdmDeprecationWarning('Test!', fp_write=getattr(our_file, 'write', sys.stderr.write)))
+    def test_TqdmDeprecationWarning_nofpwrite():
+        raise (TqdmDeprecationWarning('Test!', fp_write=None))
+
+    assert_raises(TqdmDeprecationWarning, test_TqdmDeprecationWarning)
+    assert_raises(Exception, test_TqdmDeprecationWarning_nofpwrite)
