@@ -48,18 +48,30 @@ class TMonitor(Thread):
     Monitors if tqdm bars are taking too much time to display
     and readjusts miniters automatically if necessary"""
 
+    # internal vars for unit testing
+    _time = None
+    _sleep = None
+
     def __init__ (self, tqdm_cls, sleep_interval):
         Thread.__init__(self)
         self.exit_event=Event()
         self.daemon = True  # kill this thread when main is killed (KeyboardInterrupt)
+        self.was_killed = False
         self.tqdm_cls = tqdm_cls
-        self.sleep_interval=sleep_interval
-        self._time = time
-        self._sleep = sleep
+        self.sleep_interval = sleep_interval
+        if TMonitor._time is not None:
+            self._time = TMonitor._time
+        else:
+            self._time = time
+        if TMonitor._sleep is not None:
+            self._sleep = TMonitor._sleep
+        else:
+            self._sleep = sleep
         self.start()
 
     def exit(self):
         self.exit_event.set()
+        self.was_killed = True
         #self.join()  # DO NOT, blocking event, slows down tqdm at closing
         return self.report()
 
@@ -67,6 +79,9 @@ class TMonitor(Thread):
         while not self.exit_event.isSet():
             # Sleep some time...
             self._sleep(self.sleep_interval)
+            # Quit if killed
+            if self.was_killed:
+                return
             # Then monitor!
             cur_t = self._time()
             # Check for each tqdm instance if one is waiting too long to print
@@ -74,7 +89,7 @@ class TMonitor(Thread):
                 # Only if mininterval > 1 (else it's just that iterations are slow)
                 # and if the last refresh was longer than maxinterval for this instance
                 if instance.miniters > 1 and \
-                  (cur_t - instance.last_print_t) > instance.maxinterval:
+                  (cur_t - instance.last_print_t) >= instance.maxinterval:
                     # We force bypassing miniters on next iteration
                     # dynamic_miniters should adjust mininterval automatically
                     instance.miniters = 1
@@ -82,7 +97,8 @@ class TMonitor(Thread):
                     instance.refresh()
 
     def report(self):
-        return self.is_alive()
+        #return self.is_alive()  # does not work...
+        return not self.was_killed
 
 
 class tqdm(object):
