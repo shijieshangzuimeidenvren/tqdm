@@ -1306,3 +1306,9 @@ def test_monitoring_thread():
             # Wait for the monitor to get out of sleep's loop and update tqdm...
             sleep(1)
             assert t.miniters == 1  # check that monitor corrected miniters
+            # Try again but already at miniters = 1 so nothing will be done (branch cvg)
+            timer.sleep(10)
+            t.update(1)
+            # Wait for the monitor to get out of sleep's loop and update tqdm...
+            sleep(1)
+            assert t.miniters == 1  # check that monitor corrected miniters

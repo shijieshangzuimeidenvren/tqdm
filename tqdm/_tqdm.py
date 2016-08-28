@@ -76,10 +76,11 @@ class TMonitor(Thread):
         return self.report()
 
     def run(self):
-        while not self.exit_event.isSet():
+        while True:
             # Sleep some time...
             self._sleep(self.sleep_interval)
             # Quit if killed
+            # if self.exit_event.isSet():  # TODO: should work but does not...
             if self.was_killed:
                 return
             # Then monitor!
@@ -97,7 +98,7 @@ class TMonitor(Thread):
                     instance.refresh()
 
     def report(self):
-        #return self.is_alive()  # does not work...
+        #return self.is_alive()  # TODO: does not work...
         return not self.was_killed
 
 
