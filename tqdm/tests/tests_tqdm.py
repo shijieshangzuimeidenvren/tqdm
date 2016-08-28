@@ -78,8 +78,9 @@ class DiscreteTimer(object):
         '''Get the current time'''
         return self.t
 
+
 class fakesleep(object):
-        '''For programs: wait until the discrete timer reached the required time'''
+        '''Wait until the discrete timer reached the required time'''
         def __init__(self, dtimer):
             self.dtimer = dtimer
 
@@ -87,6 +88,7 @@ class fakesleep(object):
             end = t + self.dtimer.t
             while(self.dtimer.t < end):
                 pass
+
 
 def cpu_timify(t, timer=None):
     '''Force tqdm to use the specified timer instead of system-wide time()'''
@@ -1253,7 +1255,10 @@ def test_len():
 def test_deprecation_exception():
     def test_TqdmDeprecationWarning():
         with closing(StringIO()) as our_file:
-            raise (TqdmDeprecationWarning('Test!', fp_write=getattr(our_file, 'write', sys.stderr.write)))
+            raise (TqdmDeprecationWarning('Test!',
+                                          fp_write=getattr(our_file, 'write',
+                                                           sys.stderr.write)))
+
     def test_TqdmDeprecationWarning_nofpwrite():
         raise (TqdmDeprecationWarning('Test!', fp_write=None))
 
@@ -1270,10 +1275,12 @@ def test_monitoring_thread():
     # And a fake sleeper
     sleeper = fakesleep(timer)
     TMonitor._sleep = sleeper.sleep
+
     # And a fake tqdm
     class fake_tqdm(object):
         _instances = []
         pass
+
     # Instanciate the monitor
     monitor = TMonitor(fake_tqdm, 10)
     # Test if alive, then killed
@@ -1281,7 +1288,7 @@ def test_monitoring_thread():
     monitor.exit()
     timer.sleep(20)  # need to go out of the sleep to die
     assert not monitor.report()
-    #assert not monitor.is_alive()  # does not work, dunno why, thread not killed
+    # assert not monitor.is_alive()  # not working dunno why, thread not killed
     del monitor
 
     # 2- Test for real with a tqdm instance that takes too long
@@ -1294,21 +1301,24 @@ def test_monitoring_thread():
     TMonitor._time = timer.time
     TMonitor._sleep = sleeper.sleep
     with closing(StringIO()) as our_file:
-        with tqdm(total=total, file=our_file, miniters=500, mininterval=0.1) as t:
+        with tqdm(total=total, file=our_file, miniters=500,
+                  mininterval=0.1) as t:
             cpu_timify(t, timer)
-            # Do a lot of iterations in a small timeframe (smaller than monitor interval)
+            # Do a lot of iterations in a small timeframe
+            # (smaller than monitor interval)
             timer.sleep(5)
             t.update(500)
-            assert t.miniters == 500  # check that dynamic_miniters adjusted miniters
-            # Then do one iteration after monitor interval, so that monitor kicks in
+            # check that dynamic_miniters adjusted miniters
+            assert t.miniters == 500
+            # Then do 1 it after monitor interval, so that monitor kicks in
             timer.sleep(10)
             t.update(1)
-            # Wait for the monitor to get out of sleep's loop and update tqdm...
+            # Wait for the monitor to get out of sleep's loop and update tqdm..
             sleep(1)
             assert t.miniters == 1  # check that monitor corrected miniters
-            # Try again but already at miniters = 1 so nothing will be done (branch cvg)
+            # Try again but already at miniters = 1 so nothing will be done
             timer.sleep(10)
             t.update(1)
-            # Wait for the monitor to get out of sleep's loop and update tqdm...
+            # Wait for the monitor to get out of sleep's loop and update tqdm..
             sleep(1)
             assert t.miniters == 1  # check that monitor corrected miniters

@@ -52,10 +52,10 @@ class TMonitor(Thread):
     _time = None
     _sleep = None
 
-    def __init__ (self, tqdm_cls, sleep_interval):
+    def __init__(self, tqdm_cls, sleep_interval):
         Thread.__init__(self)
-        self.exit_event=Event()
-        self.daemon = True  # kill this thread when main is killed (KeyboardInterrupt)
+        self.exit_event = Event()
+        self.daemon = True  # kill thread when main killed (KeyboardInterrupt)
         self.was_killed = False
         self.tqdm_cls = tqdm_cls
         self.sleep_interval = sleep_interval
@@ -72,7 +72,7 @@ class TMonitor(Thread):
     def exit(self):
         self.exit_event.set()
         self.was_killed = True
-        #self.join()  # DO NOT, blocking event, slows down tqdm at closing
+        # self.join()  # DO NOT, blocking event, slows down tqdm at closing
         return self.report()
 
     def run(self):
@@ -87,8 +87,8 @@ class TMonitor(Thread):
             cur_t = self._time()
             # Check for each tqdm instance if one is waiting too long to print
             for instance in self.tqdm_cls._instances:
-                # Only if mininterval > 1 (else it's just that iterations are slow)
-                # and if the last refresh was longer than maxinterval for this instance
+                # Only if mininterval > 1 (else iterations are just slow)
+                # and last refresh was longer than maxinterval in this instance
                 if instance.miniters > 1 and \
                   (cur_t - instance.last_print_t) >= instance.maxinterval:
                     # We force bypassing miniters on next iteration
@@ -98,7 +98,7 @@ class TMonitor(Thread):
                     instance.refresh()
 
     def report(self):
-        #return self.is_alive()  # TODO: does not work...
+        # return self.is_alive()  # TODO: does not work...
         return not self.was_killed
 
 
@@ -109,7 +109,7 @@ class tqdm(object):
     progressbar every time a value is requested.
     """
 
-    monitor_interval = 10
+    monitor_interval = 10  # set to 0 to disable the thread
     monitor = None
 
     @staticmethod
@@ -356,7 +356,8 @@ class tqdm(object):
             cls._instances = WeakSet()
         cls._instances.add(instance)
         # Create the monitoring thread
-        if cls.monitor_interval and (cls.monitor is None or not cls.monitor.report()):
+        if cls.monitor_interval and (cls.monitor is None or
+                                     not cls.monitor.report()):
             cls.monitor = TMonitor(cls, cls.monitor_interval)
         # Return the instance
         return instance
@@ -384,8 +385,10 @@ class tqdm(object):
                 if inst.pos > instance.pos:
                     inst.pos -= 1
             # Kill monitor if no instances left
-            if not cls._instances:
+            if not cls._instances and cls.monitor:
                 cls.monitor.exit()
+                del cls.monitor
+                cls.monitor = None
         except KeyError:
             pass
 
@@ -787,12 +790,12 @@ Please use `tqdm_gui(...)` instead of `tqdm(..., gui=True)`
                 n += 1
                 # check the counter first (avoid calls to time())
                 if n - last_print_n >= self.miniters:
-                    miniters = self.miniters  # watch for monitoring thread changes
+                    miniters = self.miniters  # watch monitoring thread changes
                     delta_t = _time() - last_print_t
                     if delta_t >= mininterval:
                         cur_t = _time()
                         delta_it = n - last_print_n
-                        elapsed = cur_t - start_t  # perf optimization if in inner loop
+                        elapsed = cur_t - start_t  # optimized if in inner loop
                         # EMA (not just overall average)
                         if smoothing and delta_t:
                             avg_time = delta_t / delta_it \
