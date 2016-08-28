@@ -627,15 +627,15 @@ Monitoring thread, intervals and miniters
 ``tqdm`` tries to be as efficient as possible by reducing its overhead on your loops,
 using a few tricks:
 
-1. avoid refreshing bar status all the time, but rather when there is something new.
+1. Avoid refreshing bar status all the time, but rather when there is something new.
 To do that, ``mininterval`` defines how much time to wait between each refresh. ``tqdm``
 always gets updated in the background, but it will display only every ``mininterval``.
 
-2. checking time all the time is costly. Thus, ``tqdm`` avoid that by checking time only
+2. Checking time all the time is costly. Thus, ``tqdm`` avoid that by checking time only
 every ``miniters`` iterations, which is way more efficient (it's just a few simple math
 operations).
 
-3. configuring ``miniters`` is complicated, ``mininterval`` is much more intuitive,
+3. Configuring ``miniters`` is complicated, ``mininterval`` is much more intuitive,
 so a clever adjustment system ``dynamic_miniters`` was devised: after a few iterations,
 ``miniters`` is automatically adjusted to the amount of iterations that equal to
 ``mininterval`` time interval. In other words, we try to check if it's time to print
@@ -650,13 +650,13 @@ refresh, and there is a monitoring thread that runs concurrently to ``tqdm`` to 
 if any bar is way over its due refreshing (by comparing to ``maxinterval``), and refresh
 it forcibly.
 
-The monitoring thread should not be a noticeable overhead, and it ensures that
+The monitoring thread should not have a noticeable overhead, and it ensures that
 you will never wait more than 10 seconds by default. This value can be changed
 by setting ``tqdm.tqdm.monitor_interval = x`` where x is the interval (in seconds)
 for the monitor to refresh, and ``maxinterval = x`` for each ``tqdm`` bar.
 
 If you really need to disable any thread for your application, you can set
-``tqdm.tqdm.monitor_interval = 0`` before instanciating any ``tqdm`` bar,
+``tqdm.tqdm.monitor_interval = 0`` before instantiating any ``tqdm`` bar,
 this will disable the monitoring threshold.
 
 

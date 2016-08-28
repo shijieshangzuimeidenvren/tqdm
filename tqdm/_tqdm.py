@@ -15,8 +15,7 @@ from __future__ import division
 from ._utils import _supports_unicode, _environ_cols_wrapper, _range, _unich, \
     _term_move_up, _unicode, WeakSet
 import sys
-from threading import Thread
-from threading import Event
+from threading import Thread, Event
 from time import time, sleep
 
 
@@ -44,9 +43,18 @@ class TqdmDeprecationWarning(Exception):
 
 
 class TMonitor(Thread):
-    """ tqdm monitoring thread
+    """
+    Monitoring thread for tqdm bars.
     Monitors if tqdm bars are taking too much time to display
-    and readjusts miniters automatically if necessary"""
+    and readjusts miniters automatically if necessary.
+
+    Parameters
+    ----------
+    tqdm_cls  : class
+        tqdm class to use (can be core tqdm or a submodule).
+    sleep_interval  : fload
+        Time to sleep between monitoring checks.
+    """
 
     # internal vars for unit testing
     _time = None
@@ -384,7 +392,7 @@ class tqdm(object):
             for inst in cls._instances:
                 if inst.pos > instance.pos:
                     inst.pos -= 1
-            # Kill monitor if no instances left
+            # Kill monitor if no instances are left
             if not cls._instances and cls.monitor:
                 cls.monitor.exit()
                 del cls.monitor

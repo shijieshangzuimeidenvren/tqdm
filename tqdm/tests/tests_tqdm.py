@@ -10,13 +10,12 @@ import os
 from nose import with_setup
 from nose.plugins.skip import SkipTest
 from nose.tools import assert_raises
+from time import sleep
 
 from tqdm import tqdm
 from tqdm import trange
 from tqdm import TqdmDeprecationWarning
 from tqdm._tqdm import TMonitor
-
-from time import sleep
 
 try:
     from StringIO import StringIO
