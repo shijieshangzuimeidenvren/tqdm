@@ -764,8 +764,8 @@ Please use `tqdm_gui(...)` instead of `tqdm(..., gui=True)`
                 # Note: does not call self.update(1) for speed optimisation.
                 n += 1
                 # check the counter first (avoid calls to time())
-                miniters = self.miniters  # need to watch for monitoring thread changes
-                if n - last_print_n >= miniters:
+                if n - last_print_n >= self.miniters:
+                    miniters = self.miniters  # watch for monitoring thread changes
                     delta_t = _time() - last_print_t
                     if delta_t >= mininterval:
                         cur_t = _time()
