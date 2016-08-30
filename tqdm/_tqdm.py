@@ -15,7 +15,7 @@ from __future__ import division
 from ._utils import _supports_unicode, _environ_cols_wrapper, _range, _unich, \
     _term_move_up, _unicode, WeakSet
 import sys
-from threading import Thread, Event
+from threading import Thread
 from time import time, sleep
 
 
@@ -62,7 +62,6 @@ class TMonitor(Thread):
 
     def __init__(self, tqdm_cls, sleep_interval):
         Thread.__init__(self)
-        self.exit_event = Event()
         self.daemon = True  # kill thread when main killed (KeyboardInterrupt)
         self.was_killed = False
         self.woken = 0  # useful to sync with monitor
@@ -79,7 +78,6 @@ class TMonitor(Thread):
         self.start()
 
     def exit(self):
-        self.exit_event.set()
         self.was_killed = True
         # self.join()  # DO NOT, blocking event, slows down tqdm at closing
         return self.report()
@@ -397,8 +395,8 @@ class tqdm(object):
                     inst.pos -= 1
             # Kill monitor if no instances are left
             if not cls._instances and cls.monitor:
-                cls.monitor.exit()
-                del cls.monitor
+                #cls.monitor.exit()
+                #del cls.monitor
                 cls.monitor = None
         except KeyError:
             pass
