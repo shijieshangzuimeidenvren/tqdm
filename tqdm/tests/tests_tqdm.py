@@ -1310,21 +1310,25 @@ def test_monitoring_thread():
             cpu_timify(t, timer)
             # Do a lot of iterations in a small timeframe
             # (smaller than monitor interval)
-            timer.sleep(5)
+            timer.sleep(5)  # monitor won't wake up
             t.update(500)
             # check that our fixed miniters is still there
             assert t.miniters == 500
             # Then do 1 it after monitor interval, so that monitor kicks in
+            mtime = t.monitor.woken
             timer.sleep(10)
             t.update(1)
             # Wait for the monitor to get out of sleep's loop and update tqdm..
-            sleep(1)
+            while not (t.monitor.woken > mtime):
+                pass
             assert t.miniters == 1  # check that monitor corrected miniters
             # Try again but already at miniters = 1 so nothing will be done
+            mtime = t.monitor.woken
             timer.sleep(10)
             t.update(2)
+            while not (t.monitor.woken > mtime):
+                pass
             # Wait for the monitor to get out of sleep's loop and update tqdm..
-            sleep(1)
             assert t.miniters == 1  # check that monitor corrected miniters
 
     # 3- Check that class var monitor is deleted if no instance left
@@ -1354,10 +1358,12 @@ def test_monitoring_thread():
                 assert t1.miniters == 500
                 assert t2.miniters == 500
                 # Then do 1 it after monitor interval, so that monitor kicks in
+                mtime = t1.monitor.woken
                 timer.sleep(20)
                 t1.update(1)
                 t2.update(1)
                 # Wait for the monitor to get out of sleep and update tqdm
-                sleep(1)
+                while not (t.monitor.woken > mtime):
+                    pass
                 assert t1.miniters == 1  # check that monitor corrected miniters
                 assert t2.miniters == 500  # check that t2 was not adjusted

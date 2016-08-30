@@ -65,6 +65,7 @@ class TMonitor(Thread):
         self.exit_event = Event()
         self.daemon = True  # kill thread when main killed (KeyboardInterrupt)
         self.was_killed = False
+        self.woken = 0  # useful to sync with monitor
         self.tqdm_cls = tqdm_cls
         self.sleep_interval = sleep_interval
         if TMonitor._time is not None:
@@ -102,8 +103,10 @@ class TMonitor(Thread):
                     # We force bypassing miniters on next iteration
                     # dynamic_miniters should adjust mininterval automatically
                     instance.miniters = 1
-                    # Refresh now!
+                    # Refresh now! (works only for manual tqdm)
                     instance.refresh()
+            # After processing and before sleeping, notify that we woke
+            self.woken += 1
 
     def report(self):
         # return self.is_alive()  # TODO: does not work...
