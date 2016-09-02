@@ -752,7 +752,7 @@ Please use `tqdm_gui(...)` instead of `tqdm(..., gui=True)`
                         # If no `miniters` was specified, adjust automatically
                         # to the maximum iteration rate seen so far.
                         if dynamic_miniters:
-                            if maxinterval and delta_t > maxinterval:
+                            if maxinterval and delta_t >= maxinterval:
                                 # Adjust miniters to some time interval using rule of 3
                                 if mininterval:
                                     # Set miniters to correspond to mininterval
@@ -777,6 +777,7 @@ Please use `tqdm_gui(...)` instead of `tqdm(..., gui=True)`
             # Update some internal variables for close().
             self.last_print_n = last_print_n
             self.n = n
+            self.miniters = miniters
             self.close()
 
     def update(self, n=1):
@@ -846,12 +847,12 @@ Please use `tqdm_gui(...)` instead of `tqdm(..., gui=True)`
                 # calls to `tqdm.update()` will only cause an update after
                 # at least 5 more iterations.
                 if self.dynamic_miniters:
-                    if self.maxinterval and delta_t > self.maxinterval:
+                    if self.maxinterval and delta_t >= self.maxinterval:
                         if self.mininterval:
-                            self.miniters = self.miniters * self.mininterval \
+                            self.miniters = delta_it * self.mininterval \
                                         / delta_t
                         else:
-                            self.miniters = self.miniters * self.maxinterval \
+                            self.miniters = delta_it * self.maxinterval \
                                         / delta_t
                     elif self.mininterval and delta_t:
                         self.miniters = self.smoothing * delta_it \
