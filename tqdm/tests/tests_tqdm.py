@@ -435,17 +435,17 @@ def test_max_interval():
 
         our_file.seek(0)
         assert "15%" in our_file.read()
-    
+
     # Test different behavior with and without mininterval
     timer = DiscreteTimer()
     total = 1000
     mininterval = 0.1
     maxinterval = 10
     with closing(StringIO()) as our_file:
-        with tqdm(total=total, file=our_file, miniters=None, mininterval=mininterval,
-                  smoothing=1, maxinterval=maxinterval) as tm1:
-            with tqdm(total=total, file=our_file, miniters=None, mininterval=0,
-                      smoothing=1, maxinterval=maxinterval) as tm2:
+        with tqdm(total=total, file=our_file, miniters=None, smoothing=1,
+                  mininterval=mininterval, maxinterval=maxinterval) as tm1:
+            with tqdm(total=total, file=our_file, miniters=None, smoothing=1,
+                      mininterval=0, maxinterval=maxinterval) as tm2:
 
                 cpu_timify(tm1, timer)
                 cpu_timify(tm2, timer)
@@ -461,7 +461,10 @@ def test_max_interval():
                 tm1.update(total/2)
                 tm2.update(total/2)
                 res = [tm1.miniters, tm2.miniters]
-                assert res == [(total/2)*mininterval/(maxinterval*2), (total/2)*maxinterval/(maxinterval*2)]
+                assert res == [
+                               (total/2)*mininterval/(maxinterval*2),
+                               (total/2)*maxinterval/(maxinterval*2)
+                               ]
 
     # Same with iteratable based tqdm
     timer1 = DiscreteTimer()  # need 2 timers for each bar because zip not work
@@ -470,10 +473,10 @@ def test_max_interval():
     mininterval = 0.1
     maxinterval = 10
     with closing(StringIO()) as our_file:
-        t1 = tqdm(_range(total), file=our_file, miniters=None, mininterval=mininterval,
-              smoothing=1, maxinterval=maxinterval)
-        t2 = tqdm(_range(total), file=our_file, miniters=None, mininterval=0,
-              smoothing=1, maxinterval=maxinterval)
+        t1 = tqdm(_range(total), file=our_file, miniters=None, smoothing=1,
+                  mininterval=mininterval, maxinterval=maxinterval)
+        t2 = tqdm(_range(total), file=our_file, miniters=None, smoothing=1,
+                  mininterval=0, maxinterval=maxinterval)
 
         cpu_timify(t1, timer1)
         cpu_timify(t2, timer2)

@@ -483,15 +483,16 @@ class tqdm(object):
         mininterval  : float, optional
             Minimum progress display update interval, in seconds [default: 0.1].
         maxinterval  : float, optional
-            Maximum progress display update interval, in seconds [default: 10.0].
+            Maximum progress display update interval, in seconds [default: 10].
             Will readjust automatically to adjust miniters to mininterval after
             a too long update. Only works if dynamic_miniters.
         miniters  : int, optional
             Minimum progress display update interval, in iterations.
-            If 0 and dynamic_miniters, will be automatically adjusted to correspond
-            to mininterval (more CPU efficient, good for tight loops).
-            If > 0, will set `mininterval=0` and display at fixed number of iterations.
-            If your progress is highly erratic with both fast and slow iterations
+            If 0 and dynamic_miniters, will be automatically adjusted to equal
+            mininterval (more CPU efficient, good for tight loops).
+            If > 0, will skip display of the specified number of iterations.
+            Tweak this and mininterval to get very efficient loops.
+            If your progress is erratic with both fast and slow iterations
             (network, skipping items, etc) you should set miniters=1.
         ascii  : bool, optional
             If unspecified or False, use unicode (smooth blocks) to fill
@@ -753,7 +754,7 @@ Please use `tqdm_gui(...)` instead of `tqdm(..., gui=True)`
                         # to the maximum iteration rate seen so far.
                         if dynamic_miniters:
                             if maxinterval and delta_t >= maxinterval:
-                                # Adjust miniters to some time interval using rule of 3
+                                # Adjust miniters to time interval by rule of 3
                                 if mininterval:
                                     # Set miniters to correspond to mininterval
                                     miniters = delta_it * mininterval / delta_t
