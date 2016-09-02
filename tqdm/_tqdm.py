@@ -61,10 +61,11 @@ class TMonitor(Thread):
     _sleep = None
 
     def __init__(self, tqdm_cls, sleep_interval):
+        sys.setcheckinterval(100)
         Thread.__init__(self)
         self.daemon = True  # kill thread when main killed (KeyboardInterrupt)
         self.was_killed = False
-        self.woken = 0  # useful to sync with monitor
+        self.woken = 0  # last time woken up, to sync with monitor
         self.tqdm_cls = tqdm_cls
         self.sleep_interval = sleep_interval
         if TMonitor._time is not None:
@@ -83,7 +84,11 @@ class TMonitor(Thread):
         return self.report()
 
     def run(self):
+        cur_t = self._time()
         while True:
+            # After processing and before sleeping, notify that we woke
+            # Need to be done just before sleeping
+            self.woken = cur_t
             # Sleep some time...
             self._sleep(self.sleep_interval)
             # Quit if killed
@@ -103,8 +108,6 @@ class TMonitor(Thread):
                     instance.miniters = 1
                     # Refresh now! (works only for manual tqdm)
                     instance.refresh()
-            # After processing and before sleeping, notify that we woke
-            self.woken += 1
 
     def report(self):
         # return self.is_alive()  # TODO: does not work...
@@ -395,8 +398,8 @@ class tqdm(object):
                     inst.pos -= 1
             # Kill monitor if no instances are left
             if not cls._instances and cls.monitor:
-                #cls.monitor.exit()
-                #del cls.monitor
+                cls.monitor.exit()
+                del cls.monitor
                 cls.monitor = None
         except KeyError:
             pass

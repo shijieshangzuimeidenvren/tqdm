@@ -86,7 +86,7 @@ class fakesleep(object):
         def sleep(self, t):
             end = t + self.dtimer.t
             while(self.dtimer.t < end):
-                pass
+                sleep(0.0000001)  # sleep a bit to interrupt (instead of pass)
 
 
 def cpu_timify(t, timer=None):
@@ -1315,19 +1315,26 @@ def test_monitoring_thread():
             # check that our fixed miniters is still there
             assert t.miniters == 500
             # Then do 1 it after monitor interval, so that monitor kicks in
-            mtime = t.monitor.woken
             timer.sleep(10)
             t.update(1)
             # Wait for the monitor to get out of sleep's loop and update tqdm..
-            while not (t.monitor.woken > mtime):
-                pass
+            timeend = timer.time()
+            while not (t.monitor.woken >= timeend):
+                timer.sleep(1)  # Force monitor to wake up if it woken too soon
+                sleep(0.000001)  # sleep to allow interrupt (instead of pass)
             assert t.miniters == 1  # check that monitor corrected miniters
+            # Note: at this point, there may be a race condition: monitor saved
+            # current woken time but timer.sleep() happen just before monitor sleep
+            # to fix that, either sleep here or increase time in a loop to ensure
+            # that monitor wakes up at some point.
+
             # Try again but already at miniters = 1 so nothing will be done
-            mtime = t.monitor.woken
             timer.sleep(10)
             t.update(2)
-            while not (t.monitor.woken > mtime):
-                pass
+            timeend = timer.time()
+            while not (t.monitor.woken >= timeend):
+                timer.sleep(1)  # Force monitor to wake up if it woken too soon
+                sleep(0.000001)
             # Wait for the monitor to get out of sleep's loop and update tqdm..
             assert t.miniters == 1  # check that monitor corrected miniters
 
@@ -1335,35 +1342,37 @@ def test_monitoring_thread():
     assert tqdm.monitor is None
 
     # 4- Test on multiple bars, one not needing miniters adjustment
-    # total = 1000
-    # # Setup a discrete timer
-    # timer = DiscreteTimer()
-    # # And a fake sleeper
-    # sleeper = fakesleep(timer)
-    # # Setup TMonitor to use the timer
-    # TMonitor._time = timer.time
-    # TMonitor._sleep = sleeper.sleep
-    # with closing(StringIO()) as our_file:
-        # with tqdm(total=total, file=our_file, miniters=500,
-                  # mininterval=0.1, maxinterval=10) as t1:
-            # # Set high maxinterval for t2 so monitor does not need to adjust it
-            # with tqdm(total=total, file=our_file, miniters=500,
-                      # mininterval=0.1, maxinterval=1E5) as t2:
-                # cpu_timify(t1, timer)
-                # cpu_timify(t2, timer)
-                # # Do a lot of iterations in a small timeframe
-                # timer.sleep(5)
-                # t1.update(500)
-                # t2.update(500)
-                # assert t1.miniters == 500
-                # assert t2.miniters == 500
-                # # Then do 1 it after monitor interval, so that monitor kicks in
-                # mtime = t1.monitor.woken
-                # timer.sleep(20)
-                # t1.update(1)
-                # t2.update(1)
-                # # Wait for the monitor to get out of sleep and update tqdm
-                # while not (t.monitor.woken > mtime):
-                    # pass
-                # assert t1.miniters == 1  # check that monitor corrected miniters
-                # assert t2.miniters == 500  # check that t2 was not adjusted
+    total = 1000
+    # Setup a discrete timer
+    timer = DiscreteTimer()
+    # And a fake sleeper
+    sleeper = fakesleep(timer)
+    # Setup TMonitor to use the timer
+    TMonitor._time = timer.time
+    TMonitor._sleep = sleeper.sleep
+    with closing(StringIO()) as our_file:
+        with tqdm(total=total, file=our_file, miniters=500,
+                  mininterval=0.1, maxinterval=10) as t1:
+            # Set high maxinterval for t2 so monitor does not need to adjust it
+            with tqdm(total=total, file=our_file, miniters=500,
+                      mininterval=0.1, maxinterval=1E5) as t2:
+                cpu_timify(t1, timer)
+                cpu_timify(t2, timer)
+                # Do a lot of iterations in a small timeframe
+                timer.sleep(5)
+                t1.update(500)
+                t2.update(500)
+                assert t1.miniters == 500
+                assert t2.miniters == 500
+                # Then do 1 it after monitor interval, so that monitor kicks in
+                mtime = t1.monitor.woken
+                timer.sleep(20)
+                t1.update(1)
+                t2.update(1)
+                # Wait for the monitor to get out of sleep and update tqdm
+                timeend = timer.time()
+                while not (t.monitor.woken >= timeend):
+                    timer.sleep(1)  # Force monitor to wake up if it woken too soon
+                    sleep(0.000001)
+                assert t1.miniters == 1  # check that monitor corrected miniters
+                assert t2.miniters == 500  # check that t2 was not adjusted
