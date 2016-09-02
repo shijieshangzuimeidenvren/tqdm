@@ -1269,6 +1269,7 @@ def test_deprecation_exception():
 def test_monitoring_thread():
     # Note: should fix miniters for these tests, else with dynamic_miniters
     # it's too complicated to handle with monitoring update and maxinterval...
+    maxinterval = 10
 
     # 1- Configure and test the thread alone
     # Setup a discrete timer
@@ -1284,11 +1285,11 @@ def test_monitoring_thread():
         pass
 
     # Instanciate the monitor
-    monitor = TMonitor(fake_tqdm, 10)
+    monitor = TMonitor(fake_tqdm, maxinterval)
     # Test if alive, then killed
     assert monitor.report()
     monitor.exit()
-    timer.sleep(20)  # need to go out of the sleep to die
+    timer.sleep(maxinterval*2)  # need to go out of the sleep to die
     assert not monitor.report()
     # assert not monitor.is_alive()  # not working dunno why, thread not killed
     del monitor
@@ -1303,19 +1304,19 @@ def test_monitoring_thread():
     TMonitor._time = timer.time
     TMonitor._sleep = sleeper.sleep
     # Set monitor interval
-    tqdm.monitor_interval = 10
+    tqdm.monitor_interval = maxinterval
     with closing(StringIO()) as our_file:
         with tqdm(total=total, file=our_file, miniters=500,
-                  mininterval=0.1, maxinterval=10) as t:
+                  mininterval=0.1, maxinterval=maxinterval) as t:
             cpu_timify(t, timer)
             # Do a lot of iterations in a small timeframe
             # (smaller than monitor interval)
-            timer.sleep(5)  # monitor won't wake up
+            timer.sleep(maxinterval/2)  # monitor won't wake up
             t.update(500)
             # check that our fixed miniters is still there
             assert t.miniters == 500
             # Then do 1 it after monitor interval, so that monitor kicks in
-            timer.sleep(10)
+            timer.sleep(maxinterval*2)
             t.update(1)
             # Wait for the monitor to get out of sleep's loop and update tqdm..
             timeend = timer.time()
@@ -1329,7 +1330,7 @@ def test_monitoring_thread():
             # that monitor wakes up at some point.
 
             # Try again but already at miniters = 1 so nothing will be done
-            timer.sleep(10)
+            timer.sleep(maxinterval*2)
             t.update(2)
             timeend = timer.time()
             while not (t.monitor.woken >= timeend):
@@ -1352,7 +1353,7 @@ def test_monitoring_thread():
     TMonitor._sleep = sleeper.sleep
     with closing(StringIO()) as our_file:
         with tqdm(total=total, file=our_file, miniters=500,
-                  mininterval=0.1, maxinterval=10) as t1:
+                  mininterval=0.1, maxinterval=maxinterval) as t1:
             # Set high maxinterval for t2 so monitor does not need to adjust it
             with tqdm(total=total, file=our_file, miniters=500,
                       mininterval=0.1, maxinterval=1E5) as t2:
@@ -1366,7 +1367,7 @@ def test_monitoring_thread():
                 assert t2.miniters == 500
                 # Then do 1 it after monitor interval, so that monitor kicks in
                 mtime = t1.monitor.woken
-                timer.sleep(20)
+                timer.sleep(maxinterval*2)
                 t1.update(1)
                 t2.update(1)
                 # Wait for the monitor to get out of sleep and update tqdm
